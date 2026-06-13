@@ -13,6 +13,7 @@ import type { GetStaticPaths } from 'astro';
 const POSTS_PER_PAGE = 10;
 
 export const getStaticPaths = (async () => {
+  const POSTS_PER_PAGE = 10; // hoisted into chunk scope
   const categories = await cached('all-categories-paths', async () => {
     if (!gqlClient) return [];
     const data = await gqlClient.request(GET_CATEGORIES);
