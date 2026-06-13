@@ -1,0 +1,193 @@
+---
+// tag archive — G-will Chijioke (https://gwillchijioke.com)
+import Layout from '../../../layouts/Layout.astro';
+import Image from '../../../components/Image.astro';
+import Pagination from '../../../components/Pagination.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import { gqlClient } from '../../../lib/wp/client';
+import { GET_TAGS, GET_POSTS_BY_TAG } from '../../../lib/wp/queries';
+import { cached } from '../../../lib/cache';
+import { SITE_NAME, SITE_URL } from '../../../lib/config';
+import type { GetStaticPaths } from 'astro';
+
+const POSTS_PER_PAGE = 10;
+
+export const getStaticPaths = (async () => {
+  const tags = await cached('all-tags', async () => {
+    if (!gqlClient) return [];
+    const data = await gqlClient.request(GET_TAGS);
+    return data.tags?.nodes || [];
+  }, 600000);
+
+  const paths: any[] = [];
+
+  for (const tag of tags) {
+    if (tag.count === 0) continue;
+    const totalPages = Math.ceil(tag.count / POSTS_PER_PAGE);
+    for (let i = 1; i <= totalPages; i++) {
+      paths.push({
+        params: { tag: tag.slug, page: i === 1 ? undefined : String(i) },
+        props: { tagName: tag.name, totalPages },
+      });
+    }
+  }
+
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { tag, page } = Astro.params;
+const { tagName, totalPages } = Astro.props;
+const currentPage = page ? parseInt(page, 10) : 1;
+
+const posts = await cached(`tag-${tag}-page-${currentPage}`, async () => {
+  if (!gqlClient) return [];
+  const data = await gqlClient.request(GET_POSTS_BY_TAG, {
+    tag: tagName,
+    first: POSTS_PER_PAGE,
+    after: currentPage > 1 ? btoa(`arrayconnection:${(currentPage - 1) * POSTS_PER_PAGE}`) : null,
+  });
+  return data.posts?.nodes || [];
+}, 300000);
+
+const breadcrumbs = [
+  { title: 'Home', url: '/' },
+  { title: 'Tags', url: '/tag' },
+  { title: tagName, url: `/tag/${tag}` },
+];
+---
+
+<Layout
+  title={`${tagName} — ${SITE_NAME}`}
+  description={`Articles tagged with ${tagName} on ${SITE_NAME}`}
+  canonical={`${SITE_URL}/tag/${tag}${currentPage > 1 ? `/page/${currentPage}` : ''}`}
+  type="website"
+>
+  <div class="archive-page">
+    <Breadcrumbs crumbs={breadcrumbs} />
+    <h1 class="archive-title">#{tagName}</h1>
+    <p class="archive-subtitle">{posts.length} articles</p>
+
+    <div class="post-list">
+      {posts.map(post => (
+        <article class="archive-post">
+          <a href={`/${post.slug}`} class="archive-post-link">
+            {post.featuredImage?.node && (
+              <Image
+                src={post.featuredImage.node.sourceUrl}
+                alt={post.featuredImage.node.altText || post.title}
+                width={300}
+                height={200}
+                class="archive-post-image"
+                r2Url={post.featuredImage.node.r2Url}
+                modernFormats={post.featuredImage.node.modernFormats}
+              />
+            )}
+            <div class="archive-post-content">
+              <h2 class="archive-post-title">{post.title}</h2>
+              <p class="archive-post-excerpt">{post.excerpt?.replace(/<[^>]+>/g, '').trim()}</p>
+              <div class="archive-post-meta">
+                <time datetime={post.date}>
+                  {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </time>
+                {post.readingTime && <span>{post.readingTime} min read</span>}
+              </div>
+            </div>
+          </a>
+        </article>
+      ))}
+    </div>
+
+    <Pagination
+      currentPage={currentPage}
+      totalPages={totalPages}
+      basePath={`/tag/${tag}`}
+    />
+  </div>
+</Layout>
+
+<style>
+  .archive-page {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: calc(var(--spacing) * 2) var(--gutter);
+  }
+  .archive-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 0 0.25rem;
+    color: var(--color-text);
+  }
+  .archive-subtitle {
+    color: var(--color-text-muted);
+    margin: 0 0 calc(var(--spacing) * 2);
+  }
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1.5);
+    margin-bottom: calc(var(--spacing) * 3);
+  }
+  .archive-post {
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .archive-post:hover {
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+  }
+  .archive-post-link {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    text-decoration: none;
+    color: inherit;
+  }
+  .archive-post :global(.responsive-image) {
+    margin: 0;
+    height: 100%;
+  }
+  .archive-post :global(.responsive-image img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+  }
+  .archive-post-content {
+    padding: var(--spacing);
+    display: flex;
+    flex-direction: column;
+  }
+  .archive-post-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    line-height: 1.3;
+    color: var(--color-text);
+  }
+  .archive-post-excerpt {
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+    margin: 0 0 0.75rem;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+  .archive-post-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+  @media (max-width: 640px) {
+    .archive-post-link {
+      grid-template-columns: 1fr;
+    }
+    .archive-post :global(.responsive-image img) {
+      height: 200px;
+    }
+  }
+</style>

@@ -1,0 +1,40 @@
+---
+// Ad slot component — G-will Chijioke (https://gwillchijioke.com)
+import { ADSENSE_ENABLED, ADSENSE_CLIENT, ADSENSE_SLOTS, type AdSlotName } from '../lib/config';
+
+interface Props {
+  slot: AdSlotName;
+  class?: string;
+}
+
+const { slot, class: className = '' } = Astro.props;
+const slotId = ADSENSE_SLOTS[slot];
+const showAd = ADSENSE_ENABLED && slotId && slotId !== 'XXXXXXXXXX';
+---
+
+{showAd && (
+  <div class={`ad-slot ${className}`} data-ad-slot={slot}>
+    <ins
+      class="adsbygoogle"
+      style="display:block"
+      data-ad-client={ADSENSE_CLIENT}
+      data-ad-slot={slotId}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    />
+    <script is:inline>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
+)}
+
+<style>
+  .ad-slot {
+    margin: var(--spacing) 0;
+    text-align: center;
+  }
+  .ad-slot ins {
+    display: block;
+    margin: 0 auto;
+  }
+</style>

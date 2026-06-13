@@ -1,0 +1,290 @@
+---
+/**
+ * Comments.astro — G-will Chijioke (https://gwillchijioke.com)
+ *
+ * Loads and renders WP comments client-side.
+ * Comment content is sanitized with DOMPurify (not escapeHtml) so
+ * WP's <p> tags and <em> render correctly, while XSS is blocked.
+ */
+import { ENABLE_COMMENTS, COMMENTS_ENDPOINT } from '../lib/config';
+
+interface Props {
+  postId: number;
+}
+
+const { postId } = Astro.props;
+---
+
+{ENABLE_COMMENTS && (
+  <section class="comments-section" aria-labelledby="comments-heading">
+    <h2 id="comments-heading" class="comments-title">Comments</h2>
+
+    <div class="comments-list" data-comments-list data-post-id={postId}>
+      <p class="comments-loading">Loading comments…</p>
+    </div>
+
+    <form class="comment-form" data-comment-form data-post-id={postId} novalidate>
+      <h3>Leave a comment</h3>
+      <div class="form-row">
+        <label for="comment-author">Name <span aria-hidden="true">*</span></label>
+        <input type="text" id="comment-author" name="author" required minlength="2" autocomplete="name" />
+      </div>
+      <div class="form-row">
+        <label for="comment-email">Email <span aria-hidden="true">*</span></label>
+        <input type="email" id="comment-email" name="email" required autocomplete="email" />
+        <p class="field-hint">Not published.</p>
+      </div>
+      <div class="form-row">
+        <label for="comment-content">Comment <span aria-hidden="true">*</span></label>
+        <textarea id="comment-content" name="content" rows="4" required minlength="5"></textarea>
+      </div>
+      <!-- Honeypot: hidden from humans, bots fill it -->
+      <div class="hp-field" aria-hidden="true">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" />
+      </div>
+      <button type="submit" class="comment-submit">Submit Comment</button>
+      <div class="comment-feedback" data-comment-feedback role="status" aria-live="polite"></div>
+    </form>
+  </section>
+)}
+
+<script define:vars={{ commentsEndpoint: COMMENTS_ENDPOINT }}>
+  import DOMPurify from 'dompurify';
+
+  // Allowed tags/attrs for comment body HTML from WP
+  const COMMENT_PURIFY_CONFIG = {
+    ALLOWED_TAGS: [ 'p', 'br', 'b', 'strong', 'i', 'em', 'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre' ],
+    ALLOWED_ATTR: [ 'href', 'rel', 'target' ],
+  };
+
+  async function loadComments( postId, container ) {
+    try {
+      const res = await fetch( `${ commentsEndpoint }?post_id=${ postId }` );
+      if ( !res.ok ) throw new Error( `HTTP ${ res.status }` );
+      const comments = await res.json();
+      renderComments( comments, container );
+    } catch ( e ) {
+      container.innerHTML = '<p class="comments-error">Failed to load comments.</p>';
+    }
+  }
+
+  function renderComments( comments, container ) {
+    if ( !comments.length ) {
+      container.innerHTML = '<p class="comments-empty">No comments yet. Be the first!</p>';
+      return;
+    }
+
+    container.innerHTML = comments.map( c => {
+      // Use DOMPurify to sanitize WP HTML comment content.
+      // escapeHtml() would render literal <p> tags — wrong.
+      const safeContent = DOMPurify.sanitize( c.content, COMMENT_PURIFY_CONFIG );
+      return `
+        <article class="comment" data-comment-id="${ c.id }">
+          <div class="comment-header">
+            <img src="${ escHtml( c.avatar ) }" alt="" class="comment-avatar"
+                 width="40" height="40" loading="lazy" decoding="async" />
+            <div class="comment-meta">
+              <span class="comment-author">${ escHtml( c.author ) }</span>
+              <time class="comment-date" datetime="${ c.date }">${ formatDate( c.date ) }</time>
+            </div>
+          </div>
+          <div class="comment-body">${ safeContent }</div>
+          ${ c.replies > 0
+            ? `<button class="comment-replies-toggle" data-replies="${ c.id }" type="button">
+                View ${ c.replies } ${ c.replies === 1 ? 'reply' : 'replies' }
+               </button>`
+            : '' }
+        </article>
+      `;
+    } ).join( '' );
+  }
+
+  function escHtml( str ) {
+    const d = document.createElement( 'div' );
+    d.textContent = String( str );
+    return d.innerHTML;
+  }
+
+  function formatDate( dateStr ) {
+    return new Date( dateStr ).toLocaleDateString( 'en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    } );
+  }
+
+  // Load on mount
+  document.querySelectorAll( '[data-comments-list]' ).forEach( container => {
+    const postId = container.dataset.postId;
+    if ( postId ) loadComments( postId, container );
+  } );
+
+  // Form submission
+  document.querySelectorAll( '[data-comment-form]' ).forEach( form => {
+    form.addEventListener( 'submit', async ( e ) => {
+      e.preventDefault();
+      const postId   = form.dataset.postId;
+      const feedback = form.querySelector( '[data-comment-feedback]' );
+      const btn      = form.querySelector( 'button[type="submit"]' );
+
+      // Honeypot check — if filled, silently succeed
+      if ( form.website?.value ) {
+        feedback.textContent = 'Thank you! Your comment is awaiting moderation.';
+        form.reset();
+        return;
+      }
+
+      const data = {
+        post_id:   parseInt( postId, 10 ),
+        author:    form.author.value.trim(),
+        email:     form.email.value.trim(),
+        content:   form.content.value.trim(),
+        parent:    0,
+        auth_type: 'anonymous',
+      };
+
+      if ( data.author.length < 2 ) {
+        feedback.textContent = 'Name must be at least 2 characters.';
+        return;
+      }
+      if ( !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test( data.email ) ) {
+        feedback.textContent = 'Please enter a valid email address.';
+        return;
+      }
+      if ( data.content.length < 5 ) {
+        feedback.textContent = 'Comment must be at least 5 characters.';
+        return;
+      }
+
+      btn.disabled     = true;
+      btn.textContent  = 'Submitting…';
+      feedback.textContent = '';
+
+      try {
+        const res    = await fetch( commentsEndpoint, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify( data ),
+        } );
+        const result = await res.json();
+
+        if ( result.success ) {
+          feedback.textContent = result.message || 'Your comment is awaiting moderation.';
+          form.reset();
+          const list = document.querySelector( `[data-comments-list][data-post-id="${ postId }"]` );
+          if ( list ) loadComments( postId, list );
+        } else {
+          feedback.textContent = result.message || 'Failed to submit comment.';
+        }
+      } catch ( err ) {
+        feedback.textContent = 'Network error. Please try again.';
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Submit Comment';
+      }
+    } );
+  } );
+</script>
+
+<style>
+  .comments-section {
+    margin-top: calc(var(--spacing) * 3);
+    padding-top: calc(var(--spacing) * 2);
+    border-top: 1px solid var(--color-border);
+  }
+  .comments-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing);
+    color: var(--color-text);
+  }
+  .comments-list { margin-bottom: calc(var(--spacing) * 2); }
+  .comment {
+    padding: var(--spacing);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing);
+    background: var(--color-surface-elevated);
+  }
+  .comment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .comment-avatar { border-radius: 50%; flex-shrink: 0; }
+  .comment-author { font-weight: 600; color: var(--color-text); display: block; }
+  .comment-date   { font-size: 0.875rem; color: var(--color-text-muted); }
+  .comment-body   { color: var(--color-text); line-height: 1.6; }
+  .comment-body p { margin: 0.5em 0; }
+  .comment-body p:first-child { margin-top: 0; }
+  .comment-body p:last-child  { margin-bottom: 0; }
+  .comment-replies-toggle {
+    margin-top: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 0;
+  }
+  .comment-form {
+    background: var(--color-surface-elevated);
+    padding: calc(var(--spacing) * 1.5);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+  }
+  .comment-form h3 { margin: 0 0 var(--spacing); font-size: 1.125rem; }
+  .form-row { margin-bottom: var(--spacing); }
+  .form-row label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.375rem;
+    color: var(--color-text);
+  }
+  .form-row input,
+  .form-row textarea {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.9375rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .form-row input:focus,
+  .form-row textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-alpha);
+  }
+  .field-hint { font-size: 0.8125rem; color: var(--color-text-muted); margin: 0.25rem 0 0; }
+  /* Hide honeypot from humans */
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .comment-submit {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+  }
+  .comment-submit:hover   { opacity: 0.9; }
+  .comment-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .comment-feedback {
+    margin-top: 0.75rem;
+    font-size: 0.9375rem;
+    min-height: 1.5em;
+  }
+  .comments-loading,
+  .comments-empty,
+  .comments-error { color: var(--color-text-muted); font-style: italic; }
+</style>

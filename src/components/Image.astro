@@ -1,0 +1,107 @@
+---
+// Image component — G-will Chijioke (https://gwillchijioke.com)
+import { ENABLE_R2_IMAGES, R2_PUBLIC_URL } from '../lib/config';
+
+interface Props {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  class?: string;
+  loading?: 'eager' | 'lazy';
+  decoding?: 'sync' | 'async' | 'auto';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  sizes?: string;
+  srcset?: string;
+  r2Url?: string;
+  modernFormats?: Array<{ format: string; url: string; width: number; height: number }>;
+  caption?: string;
+}
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  class: className = '',
+  loading = 'lazy',
+  decoding = 'async',
+  fetchpriority = 'auto',
+  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px',
+  srcset,
+  r2Url,
+  modernFormats = [],
+  caption,
+} = Astro.props;
+
+// Determine best image source
+let imageSrc = src;
+if (ENABLE_R2_IMAGES && r2Url) {
+  imageSrc = r2Url;
+} else if (ENABLE_R2_IMAGES && src.startsWith('/wp-content/')) {
+  imageSrc = `${R2_PUBLIC_URL}${src}`;
+}
+
+// Build picture sources for modern formats
+const webpSource = modernFormats.find(f => f.format === 'webp');
+const avifSource = modernFormats.find(f => f.format === 'avif');
+
+const imgAttrs = {
+  src: imageSrc,
+  alt,
+  width,
+  height,
+  loading,
+  decoding,
+  fetchpriority,
+  class: className,
+};
+---
+
+<figure class={`responsive-image ${className}`}>
+  <picture>
+    {avifSource && (
+      <source
+        srcset={avifSource.url}
+        type="image/avif"
+        sizes={sizes}
+      />
+    )}
+    {webpSource && (
+      <source
+        srcset={webpSource.url}
+        type="image/webp"
+        sizes={sizes}
+      />
+    )}
+    <img
+      src={imageSrc}
+      alt={alt}
+      width={width}
+      height={height}
+      loading={loading}
+      decoding={decoding}
+      fetchpriority={fetchpriority}
+      class={className}
+      {...(srcset ? { srcset, sizes } : {})}
+    />
+  </picture>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .responsive-image {
+    margin: 0;
+  }
+  .responsive-image img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  .responsive-image figcaption {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+</style>

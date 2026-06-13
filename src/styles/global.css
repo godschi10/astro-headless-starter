@@ -1,0 +1,145 @@
+/* Global styles — G-will Chijioke (https://gwillchijioke.com) */
+
+/**
+ * global.css — Design tokens, reset, utilities
+ * Consumes theme.json values from WP via build script
+ */
+
+:root {
+  /* Colors — Light mode defaults */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #fafafa;
+  --color-text: #1a1a1a;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-border-subtle: #f3f4f6;
+  --color-muted: #f3f4f6;
+  --color-primary: #2563eb;
+  --color-primary-alpha: rgba(37, 99, 235, 0.1);
+  --color-code-bg: #f8f9fa;
+
+  /* Spacing */
+  --spacing: 1rem;
+  --gutter: clamp(1rem, 5vw, 2rem);
+  --max-width: 1200px;
+
+  /* Border radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+  --color-bg: #0a0a0a;
+  --color-surface: #111111;
+  --color-surface-elevated: #1a1a1a;
+  --color-text: #f5f5f5;
+  --color-text-muted: #9ca3af;
+  --color-border: #27272a;
+  --color-border-subtle: #1f1f1f;
+  --color-muted: #1f1f1f;
+  --color-primary: #3b82f6;
+  --color-primary-alpha: rgba(59, 130, 246, 0.15);
+  --color-code-bg: #1a1a1a;
+}
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-primary-alpha);
+  color: var(--color-text);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print */
+@media print {
+  .site-header, .site-footer, .reading-progress, .search-overlay, .exit-intent-overlay {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+}

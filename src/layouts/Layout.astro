@@ -1,0 +1,142 @@
+---
+/**
+ * Layout.astro — G-will Chijioke (https://gwillchijioke.com)
+ */
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { generateSeoTags, type SeoConfig } from '../lib/seo';
+import { jsonLdStringify } from '../lib/wp/client';
+import { ENABLE_DARKMODE, MATOMO_URL, MATOMO_SITE_ID, SITE_URL, SITE_NAME } from '../lib/config';
+
+interface Props {
+  title?:        string;
+  description?:  string;
+  canonical?:    string;
+  cover?:        string | null;
+  coverAlt?:     string;
+  coverWidth?:   number | null;
+  coverHeight?:  number | null;
+  type?:         'website' | 'article';
+  noindex?:      boolean;
+  commentSchema?: Record<string, unknown> | null;
+  authorName?:   string;
+  published?:    string;
+  modified?:     string;
+  lang?:         string;
+}
+
+const {
+  title        = SITE_NAME,
+  description  = '',
+  canonical    = '',
+  cover        = null,
+  coverAlt     = '',
+  coverWidth   = null,
+  coverHeight  = null,
+  type         = 'website',
+  noindex      = false,
+  commentSchema= null,
+  authorName   = '',
+  published    = '',
+  modified     = '',
+  lang         = 'en',
+} = Astro.props;
+
+const seoConfig: SeoConfig = {
+  title,
+  description,
+  canonical,
+  noindex,
+  type,
+  cover,
+  coverAlt,
+  // SITE_NAME comes from config.ts — not hardcoded
+  authorName,
+  published,
+  modified,
+};
+
+const seoTags   = generateSeoTags( seoConfig );
+const ogImage   = cover || `${ SITE_URL }/og-default.jpg`;
+const matomoOn  = MATOMO_URL && MATOMO_SITE_ID;
+
+// WP REST origin for preconnect — derived from env
+const wpOrigin  = import.meta.env.WP_GRAPHQL_URL?.replace( '/graphql', '' )
+               || import.meta.env.WP_REST_URL?.replace( '/wp-json/wp/v2', '' )
+               || '';
+---
+
+<!doctype html>
+<html lang={lang} data-theme={ENABLE_DARKMODE ? undefined : 'light'}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="generator" content={Astro.generator} />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+  <!-- Dark mode flash prevention
+       SHA256 hash of this exact script must be in _headers CSP script-src.
+       Run: echo -n '<script>…</script>' | openssl dgst -sha256 -binary | base64
+       Then add: 'sha256-<hash>' to Content-Security-Policy script-src in public/_headers -->
+  {ENABLE_DARKMODE && (
+    <script is:inline>
+      (function(){var s=localStorage.getItem('headless-color-scheme');if(s){document.documentElement.dataset.theme=s;}else if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.dataset.theme='dark';}})();
+    </script>
+  )}
+
+  <!-- SEO meta tags (title, description, canonical, robots, OG, Twitter, JSON-LD) -->
+  <Fragment set:html={seoTags} />
+
+  <!-- OG image dimensions -->
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:image:width" content={String( coverWidth || 1200 )} />
+  <meta property="og:image:height" content={String( coverHeight || 630 )} />
+  <meta name="twitter:image" content={ogImage} />
+
+  <!-- Preconnect to WP origin for faster first REST/GraphQL call at build -->
+  {wpOrigin && <link rel="preconnect" href={wpOrigin} />}
+
+  <!-- Comment schema (BlogPosting + CommentAction) -->
+  {commentSchema && (
+    <script type="application/ld+json" set:html={jsonLdStringify(commentSchema)} />
+  )}
+
+  <!-- Matomo analytics
+       SHA256 hash of this script block must also be in _headers CSP script-src. -->
+  {matomoOn && (
+    <script is:inline define:vars={{ _mUrl: MATOMO_URL, _mId: MATOMO_SITE_ID }}>
+      var _paq=window._paq=window._paq||[];
+      _paq.push(['trackPageView']);
+      _paq.push(['enableLinkTracking']);
+      (function(){var u=_mUrl+'/';_paq.push(['setTrackerUrl',u+'matomo.php']);_paq.push(['setSiteId',_mId]);var d=document,g=d.createElement('script'),s=d.getElementsByTagName('script')[0];g.async=true;g.src=u+'matomo.js';s.parentNode.insertBefore(g,s);})();
+    </script>
+  )}
+</head>
+<body>
+  <a href="#content" class="skip-link">Skip to content</a>
+  <Header />
+  <main id="content">
+    <slot />
+  </main>
+  <Footer />
+</body>
+</html>
+
+<style>
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--color-primary);
+    color: white;
+    padding: 8px 16px;
+    z-index: 200;
+    transition: top 0.2s;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .skip-link:focus {
+    top: 0;
+  }
+</style>

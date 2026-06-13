@@ -1,0 +1,75 @@
+---
+// Offer page — G-will Chijioke (https://gwillchijioke.com)
+import Layout from '../../layouts/Layout.astro';
+import { SITE_NAME, SITE_URL } from '../../lib/config';
+
+const { slug } = Astro.params;
+
+// In production, fetch offer data from WP
+const offer = {
+  title: 'Special Offer',
+  description: 'Limited time offer',
+  redirectUrl: 'https://example.com/offer',
+};
+---
+
+<Layout
+  title={`${offer.title} — ${SITE_NAME}`}
+  description={offer.description}
+  canonical={`${SITE_URL}/offer/${slug}`}
+  type="website"
+>
+  <div class="offer-page">
+    <div class="offer-card">
+      <h1>{offer.title}</h1>
+      <p>{offer.description}</p>
+      <a href={offer.redirectUrl} class="offer-cta" target="_blank" rel="noopener noreferrer">
+        Claim Offer
+      </a>
+    </div>
+  </div>
+</Layout>
+
+<script is:inline define:vars={{ url: offer.redirectUrl }}>
+  // Auto-redirect after 5 seconds
+  setTimeout(() => {
+    window.location.href = url;
+  }, 5000);
+</script>
+
+<style>
+  .offer-page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: calc(var(--spacing) * 4) var(--gutter);
+    text-align: center;
+  }
+  .offer-card {
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: calc(var(--spacing) * 2);
+  }
+  .offer-card h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+  }
+  .offer-card p {
+    color: var(--color-text-muted);
+    margin: 0 0 1.5rem;
+  }
+  .offer-cta {
+    display: inline-block;
+    background: var(--color-primary);
+    color: white;
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .offer-cta:hover {
+    opacity: 0.9;
+  }
+</style>

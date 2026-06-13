@@ -1,0 +1,48 @@
+# _headers — G-will Chijioke (https://gwillchijioke.com)
+#
+# Security headers for Cloudflare Pages.
+#
+# CSP SETUP REQUIRED:
+# Replace <DARKMODE_HASH> and <MATOMO_HASH> with the SHA256 hashes of your
+# inline scripts from Layout.astro. Compute with:
+#   echo -n 'SCRIPT_CONTENT' | openssl dgst -sha256 -binary | base64
+# Then prefix with 'sha256-', e.g.: 'sha256-AbCdEf123...'
+#
+# Replace your-astro-site.com, yourwp.com, and analytics.yoursite.com
+# with your actual domains.
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+  # Content-Security-Policy
+  # Replace <DARKMODE_HASH> with actual SHA256 hash of dark mode inline script.
+  # Replace <MATOMO_HASH> with actual SHA256 hash of Matomo inline script.
+  # If analytics are disabled, remove the Matomo hash and connect-src analytics line.
+  # If AdSense is enabled, uncomment the AdSense lines.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-<DARKMODE_HASH>' 'sha256-<MATOMO_HASH>' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://yourwp.com https://analytics.yoursite.com; frame-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+  # Uncomment when ENABLE_ADSENSE=true:
+  # Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-<DARKMODE_HASH>' 'sha256-<MATOMO_HASH>' https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://partner.googleadservices.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://yourwp.com https://analytics.yoursite.com https://pagead2.googlesyndication.com; frame-src https://googleads.g.doubleclick.net; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+# Immutable cache for hashed assets (Astro adds content hash to filenames)
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Fonts
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Short-lived for search index (rebuilt on each deploy)
+/search-index.json
+  Cache-Control: public, max-age=3600
+
+# Sitemap and RSS
+/sitemap.xml
+  Cache-Control: public, max-age=3600
+/rss.xml
+  Cache-Control: public, max-age=3600

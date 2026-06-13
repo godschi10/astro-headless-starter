@@ -1,0 +1,5 @@
+# _redirects — G-will Chijioke (https://gwillchijioke.com)
+
+# Legacy WordPress redirects
+/wp-content/uploads/* https://images.yoursite.com/:splat 301
+/wp-json/* /api/:splat 301

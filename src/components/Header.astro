@@ -1,0 +1,215 @@
+---
+/**
+ * Header.astro — G-will Chijioke (https://gwillchijioke.com)
+ * Menu data is fetched once at build time via cached() — not on every page render.
+ */
+import DarkModeToggle from './DarkModeToggle.astro';
+import SearchOverlay from './SearchOverlay.astro';
+import { ENABLE_DARKMODE, SITE_NAME, SITE_URL } from '../lib/config';
+import { cached } from '../lib/cache';
+import { restFetch } from '../lib/wp/client';
+
+// Fetch nav menus once — cached() returns the same result for every page
+// in the build batch so this only hits the WP API once, not N times.
+let primaryMenu: Array<{ id: number; title: string; url: string; parent: number }> = [];
+
+try {
+  const menus = await cached( 'nav-menus', async () => {
+    return restFetch<Record<string, { items: any[] }>>(
+      // Use full URL since the headless endpoint is outside /wp/v2
+      ( import.meta.env.WP_REST_URL?.replace( '/wp-json/wp/v2', '' ) || '' )
+        + '/wp-json/headless/v1/menus'
+    );
+  }, 600000 );
+
+  primaryMenu = menus?.primary?.items || [];
+} catch ( e ) {
+  // Menu fetch failure is non-fatal — site renders without nav links
+  console.warn( '[Header] Failed to fetch menus:', e );
+}
+
+// Strip the WP origin from menu URLs so they become relative paths
+// e.g. https://yourwp.com/about → /about
+const wpOrigin = import.meta.env.WP_REST_URL?.replace( '/wp-json/wp/v2', '' ) || '';
+function relativeUrl( url: string ): string {
+  if ( wpOrigin && url.startsWith( wpOrigin ) ) return url.slice( wpOrigin.length ) || '/';
+  return url;
+}
+
+// Top-level items only (parent === 0)
+const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
+---
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="site-logo" aria-label={`${SITE_NAME} — Home`}>
+      <span class="logo-text">{SITE_NAME}</span>
+    </a>
+
+    <nav class="main-nav" aria-label="Primary navigation">
+      <button
+        class="nav-toggle"
+        aria-expanded="false"
+        aria-controls="nav-menu"
+        aria-label="Toggle navigation"
+        type="button"
+      >
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+
+      <ul id="nav-menu" class="nav-list" role="menubar">
+        {topLevelItems.map( ( item ) => (
+          <li role="none">
+            <a href={relativeUrl( item.url )} role="menuitem" class="nav-link">
+              {item.title}
+            </a>
+          </li>
+        ) )}
+        <li role="none">
+          <button
+            class="search-toggle"
+            aria-label="Open search"
+            data-search-toggle
+            type="button"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    {ENABLE_DARKMODE && <DarkModeToggle />}
+  </div>
+</header>
+
+<SearchOverlay />
+
+<script>
+  // Mobile nav toggle
+  const toggle = document.querySelector( '.nav-toggle' );
+  const menu   = document.getElementById( 'nav-menu' );
+  toggle?.addEventListener( 'click', () => {
+    const expanded = toggle.getAttribute( 'aria-expanded' ) === 'true';
+    toggle.setAttribute( 'aria-expanded', String( !expanded ) );
+    menu?.classList.toggle( 'is-open' );
+  } );
+
+  // Search toggle
+  document.querySelector( '[data-search-toggle]' )
+    ?.addEventListener( 'click', () => {
+      document.dispatchEvent( new CustomEvent( 'search:open' ) );
+    } );
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    backdrop-filter: blur(8px);
+  }
+  .header-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--spacing) var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing);
+  }
+  .site-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .main-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+  }
+  .nav-list {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.75);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nav-link {
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+  }
+  .nav-link:hover { background: var(--color-muted); }
+  .search-toggle {
+    background: none;
+    border: none;
+    color: var(--color-text);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+  }
+  .search-toggle:hover { background: var(--color-muted); }
+  .nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--color-text);
+  }
+  .hamburger {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: currentColor;
+    position: relative;
+  }
+  .hamburger::before,
+  .hamburger::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 24px;
+    height: 2px;
+    background: currentColor;
+  }
+  .hamburger::before { top: -7px; }
+  .hamburger::after  { top:  7px; }
+
+  @media (max-width: 768px) {
+    .nav-toggle { display: block; }
+    .nav-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      flex-direction: column;
+      padding: var(--spacing);
+      gap: var(--spacing);
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform var(--transition-base), opacity var(--transition-base);
+    }
+    .nav-list.is-open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+</style>

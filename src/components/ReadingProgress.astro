@@ -1,0 +1,40 @@
+---
+// Reading progress — G-will Chijioke (https://gwillchijioke.com)
+---
+
+<div class="reading-progress" data-reading-progress>
+  <div class="reading-progress-bar" data-progress-bar></div>
+</div>
+
+<script>
+  const progress = document.querySelector('[data-reading-progress]');
+  const bar = document.querySelector('[data-progress-bar]');
+
+  function updateProgress() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.body.scrollHeight - window.innerHeight;
+    const percent = Math.min((scrollTop / docHeight) * 100, 100);
+    if (bar) bar.style.width = `${percent}%`;
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+</script>
+
+<style>
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: transparent;
+    z-index: 1000;
+  }
+  .reading-progress-bar {
+    height: 100%;
+    background: var(--color-primary);
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+</style>

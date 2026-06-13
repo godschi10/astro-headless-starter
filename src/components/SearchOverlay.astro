@@ -1,0 +1,246 @@
+---
+// Search overlay component — G-will Chijioke (https://gwillchijioke.com)
+import { ENABLE_SEARCH_WORKER } from '../lib/config';
+---
+
+<div class="search-overlay" id="search-overlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Site search">
+  <div class="search-backdrop" data-search-close></div>
+  <div class="search-container">
+    <div class="search-header">
+      <input
+        type="search"
+        class="search-input"
+        placeholder="Search articles..."
+        aria-label="Search"
+        autocomplete="off"
+        data-search-input
+      />
+      <button class="search-close" data-search-close aria-label="Close search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="search-status" data-search-status aria-live="polite"></div>
+    <ul class="search-results" data-search-results role="listbox"></ul>
+  </div>
+</div>
+
+<script>
+  import MiniSearch from 'minisearch';
+
+  const overlay = document.getElementById('search-overlay');
+  const input = document.querySelector('[data-search-input]');
+  const status = document.querySelector('[data-search-status]');
+  const resultsList = document.querySelector('[data-search-results]');
+  const closeTriggers = document.querySelectorAll('[data-search-close]');
+
+  let miniSearch = null;
+  let searchIndexLoaded = false;
+
+  document.addEventListener('search:open', () => {
+    overlay?.removeAttribute('hidden');
+    overlay?.setAttribute('aria-hidden', 'false');
+    input?.focus();
+    document.body.style.overflow = 'hidden';
+  });
+
+  function closeSearch() {
+    overlay?.setAttribute('hidden', '');
+    overlay?.setAttribute('aria-hidden', 'true');
+    if (input) input.value = '';
+    if (resultsList) resultsList.innerHTML = '';
+    if (status) status.textContent = '';
+    document.body.style.overflow = '';
+  }
+
+  closeTriggers.forEach(t => t.addEventListener('click', closeSearch));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSearch();
+  });
+
+  async function loadSearchIndex() {
+    if (searchIndexLoaded) return;
+    try {
+      const res = await fetch('/search-index.json');
+      const docs = await res.json();
+      miniSearch = new MiniSearch({
+        fields: ['title', 'description', 'content', 'categories'],
+        storeFields: ['title', 'slug', 'description', 'date', 'categories'],
+        searchOptions: {
+          boost: { title: 3, description: 2 },
+          fuzzy: 0.2,
+          prefix: true,
+        },
+      });
+      miniSearch.addAll(docs);
+      searchIndexLoaded = true;
+    } catch (e) {
+      console.warn('[Search] Failed to load index:', e);
+    }
+  }
+
+  let debounceTimer;
+  input?.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(debounceTimer);
+
+    if (!query) {
+      if (resultsList) resultsList.innerHTML = '';
+      if (status) status.textContent = '';
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      await loadSearchIndex();
+      if (status) status.textContent = 'Searching...';
+
+      if (miniSearch) {
+        const results = miniSearch.search(query);
+        renderResults(results);
+      } else {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        renderServerResults(data.results);
+      }
+    }, 150);
+  });
+
+  function renderResults(results) {
+    if (!results.length) {
+      if (status) status.textContent = 'No results found.';
+      if (resultsList) resultsList.innerHTML = '';
+      return;
+    }
+
+    if (status) status.textContent = `${results.length} result${results.length !== 1 ? 's' : ''}`;
+    if (resultsList) {
+      resultsList.innerHTML = results.map(r => `
+        <li role="option">
+          <a href="/${r.slug}" class="search-result">
+            <span class="search-result-title">${escapeHtml(r.title)}</span>
+            <span class="search-result-desc">${escapeHtml(r.description)}</span>
+          </a>
+        </li>
+      `).join('');
+    }
+  }
+
+  function renderServerResults(results) {
+    if (!results.length) {
+      if (status) status.textContent = 'No results found.';
+      if (resultsList) resultsList.innerHTML = '';
+      return;
+    }
+    if (status) status.textContent = `${results.length} results`;
+    if (resultsList) {
+      resultsList.innerHTML = results.map(r => `
+        <li role="option">
+          <a href="/${r.slug}" class="search-result">
+            <span class="search-result-title">${escapeHtml(r.title.rendered || r.title)}</span>
+          </a>
+        </li>
+      `).join('');
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+<style>
+  .search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+  }
+  .search-overlay[hidden] {
+    display: none;
+  }
+  .search-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+  }
+  .search-container {
+    position: relative;
+    width: min(600px, 90vw);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    overflow: hidden;
+  }
+  .search-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing);
+    padding: var(--spacing);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.125rem;
+    color: var(--color-text);
+    outline: none;
+  }
+  .search-input::placeholder {
+    color: var(--color-text-muted);
+  }
+  .search-close {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .search-close:hover {
+    color: var(--color-text);
+  }
+  .search-status {
+    padding: 0.5rem var(--spacing);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .search-results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  .search-result {
+    display: block;
+    padding: 0.75rem var(--spacing);
+    text-decoration: none;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .search-result:hover {
+    background: var(--color-muted);
+  }
+  .search-result-title {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  .search-result-desc {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+  }
+</style>
