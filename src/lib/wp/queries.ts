@@ -224,3 +224,23 @@ export const GET_POSTS_BY_TAG = /* GraphQL */ `
     }
   }
 `;
+
+// Lean query for search index generation — only fields MiniSearch needs.
+// Excludes images, SEO, breadcrumbs to keep the search-index.json payload small.
+export const GET_POSTS_FOR_SEARCH = /* GraphQL */ `
+  query GetPostsForSearch($first: Int = 100, $after: String) {
+    posts(first: $first, after: $after, where: { status: PUBLISH }) {
+      nodes {
+        databaseId
+        slug
+        title
+        excerpt
+        date
+        categories {
+          nodes { name }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;

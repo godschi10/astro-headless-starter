@@ -2,14 +2,20 @@
 #
 # Security headers for Cloudflare Pages.
 #
-# CSP SETUP REQUIRED:
-# Replace <DARKMODE_HASH> and <MATOMO_HASH> with the SHA256 hashes of your
-# inline scripts from Layout.astro. Compute with:
-#   echo -n 'SCRIPT_CONTENT' | openssl dgst -sha256 -binary | base64
-# Then prefix with 'sha256-', e.g.: 'sha256-AbCdEf123...'
+# CSP NOTES:
+#   - Dark mode script is now an external file (/js/darkmode.js).
+#     script-src 'self' covers it. No hash needed.
 #
-# Replace your-astro-site.com, yourwp.com, and analytics.yoursite.com
-# with your actual domains.
+#   - Matomo (when enabled): Astro's define:vars wraps it in an IIFE that
+#     changes the script hash on every build. When you enable Matomo, either:
+#     (a) Add 'unsafe-inline' to script-src temporarily while you extract the hash, OR
+#     (b) Move Matomo to an external /js/matomo-init.js file (recommended).
+#     Then remove 'unsafe-inline' and redeploy.
+#
+#   - connect-src: update when you add Matomo analytics or R2 CDN domain.
+#     Add: https://analytics.yourdomain.com
+#
+#   - AdSense: uncomment the AdSense CSP block below when ENABLE_ADSENSE=true.
 
 /*
   X-Frame-Options: DENY
@@ -18,24 +24,22 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://gwillchijioke.qzz.io; frame-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
-  # Content-Security-Policy
-  # Replace <DARKMODE_HASH> with actual SHA256 hash of dark mode inline script.
-  # Replace <MATOMO_HASH> with actual SHA256 hash of Matomo inline script.
-  # If analytics are disabled, remove the Matomo hash and connect-src analytics line.
-  # If AdSense is enabled, uncomment the AdSense lines.
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-<DARKMODE_HASH>' 'sha256-<MATOMO_HASH>' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://yourwp.com https://analytics.yoursite.com; frame-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  # AdSense CSP — uncomment when ENABLE_ADSENSE=true (replace line above):
+  # Content-Security-Policy: default-src 'self'; script-src 'self' https://pagead2.googlesyndication.com https://partner.googleadservices.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://gwillchijioke.qzz.io https://pagead2.googlesyndication.com; frame-src https://googleads.g.doubleclick.net; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
-  # Uncomment when ENABLE_ADSENSE=true:
-  # Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-<DARKMODE_HASH>' 'sha256-<MATOMO_HASH>' https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://partner.googleadservices.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://yourwp.com https://analytics.yoursite.com https://pagead2.googlesyndication.com; frame-src https://googleads.g.doubleclick.net; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
-
-# Immutable cache for hashed assets (Astro adds content hash to filenames)
+# Immutable cache for hashed Astro assets (content hash in filename = safe forever)
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
 # Fonts
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Dark mode init script — long cache, rarely changes
+/js/darkmode.js
+  Cache-Control: public, max-age=86400
 
 # Short-lived for search index (rebuilt on each deploy)
 /search-index.json

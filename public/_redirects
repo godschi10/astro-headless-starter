@@ -1,5 +1,8 @@
 # _redirects — G-will Chijioke (https://gwillchijioke.com)
 
-# Legacy WordPress redirects
-/wp-content/uploads/* https://images.yoursite.com/:splat 301
-/wp-json/* /api/:splat 301
+# Media uploads — update <YOUR_R2_CDN_DOMAIN> when R2 is configured.
+# Until then, keep this commented out or images load from WP origin directly.
+# /wp-content/uploads/* https://<YOUR_R2_CDN_DOMAIN>/:splat 301
+
+# WP REST proxy — not needed; Astro fetches WP at build time.
+# /wp-json/* /api/:splat 301

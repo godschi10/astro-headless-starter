@@ -56,6 +56,8 @@ const honeypot = import.meta.env.FORM_HONEYPOT_FIELD || 'website';
   .form-group textarea:focus {
     outline: none;
     border-color: var(--color-accent, #3b82f6);
+    /* Fallback for browsers without color-mix() (Chrome <111, old Android WebViews) */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #3b82f6) 20%, transparent);
   }
   .form-honeypot { display: none; }

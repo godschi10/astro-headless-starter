@@ -67,7 +67,8 @@ export function postsToSearchDocs( posts: any[] ): SearchDocument[] {
       ? p.content.replace( /<[^>]+>/g, '' )
       : ( p.content?.rendered?.replace( /<[^>]+>/g, '' ) ?? '' ),
     categories:  ( p.categories?.nodes ?? p.categories ?? [] ).map( ( c: any ) =>
-      typeof c === 'string' ? c : String( c.databaseId ?? c.id ?? '' )
+      // Index by name so users can search "Technology", "Android", etc.
+      typeof c === 'string' ? c : ( c.name ?? String( c.databaseId ?? c.id ?? '' ) )
     ),
     date: p.date,
   } ) );
