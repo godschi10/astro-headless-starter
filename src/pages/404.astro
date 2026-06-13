@@ -1,0 +1,58 @@
+---
+// 404 page — G-will Chijioke (https://gwillchijioke.com)
+import Layout from '../layouts/Layout.astro';
+import { SITE_NAME, SITE_URL } from '../lib/config';
+---
+
+<Layout
+  title={`Page Not Found — ${SITE_NAME}`}
+  description="The page you are looking for does not exist."
+  canonical={`${SITE_URL}/404`}
+  type="website"
+>
+  <div class="not-found">
+    <h1>404</h1>
+    <p class="not-found-title">Page Not Found</p>
+    <p class="not-found-desc">The page you are looking for doesn't exist or has been moved.</p>
+    <a href="/" class="not-found-link">Go Home</a>
+  </div>
+</Layout>
+
+<style>
+  .not-found {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: calc(var(--spacing) * 6) var(--gutter);
+    text-align: center;
+  }
+  .not-found h1 {
+    font-size: 6rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+  .not-found-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+    color: var(--color-text);
+  }
+  .not-found-desc {
+    color: var(--color-text-muted);
+    margin: 0 0 1.5rem;
+  }
+  .not-found-link {
+    display: inline-block;
+    background: var(--color-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .not-found-link:hover {
+    opacity: 0.9;
+  }
+</style>

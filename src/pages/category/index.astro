@@ -1,0 +1,84 @@
+---
+// Category index — G-will Chijioke (https://gwillchijioke.com)
+import Layout from '../../layouts/Layout.astro';
+import { gqlClient } from '../../lib/wp/client';
+import { GET_CATEGORIES } from '../../lib/wp/queries';
+import { cached } from '../../lib/cache';
+import { SITE_NAME, SITE_URL } from '../../lib/config';
+
+const categories = await cached('all-categories', async () => {
+  if (!gqlClient) return [];
+  const data = await gqlClient.request(GET_CATEGORIES);
+  return data.categories?.nodes || [];
+}, 300000);
+---
+
+<Layout
+  title={`Categories — ${SITE_NAME}`}
+  description={`Browse all topics on ${SITE_NAME}`}
+  canonical={`${SITE_URL}/category`}
+  type="website"
+>
+  <div class="categories-page">
+    <h1 class="page-title">Categories</h1>
+    <div class="categories-grid">
+      {categories.filter(c => c.count > 0).map(cat => (
+        <a href={`/category/${cat.slug}`} class="category-card">
+          <h2 class="category-name">{cat.name}</h2>
+          <p class="category-desc">{cat.description || `${cat.count} articles`}</p>
+          <span class="category-count">{cat.count} articles</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .categories-page {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: calc(var(--spacing) * 2) var(--gutter);
+  }
+  .page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 0 calc(var(--spacing) * 2);
+    color: var(--color-text);
+  }
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing);
+  }
+  .category-card {
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--spacing) * 1.5);
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .category-card:hover {
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+    border-color: var(--color-primary);
+  }
+  .category-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: var(--color-text);
+  }
+  .category-desc {
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem;
+    flex: 1;
+  }
+  .category-count {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-primary);
+  }
+</style>
