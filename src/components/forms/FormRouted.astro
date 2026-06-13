@@ -1,0 +1,137 @@
+---
+// FormRouted — G-will Chijioke (https://gwillchijioke.com)
+const endpoint = import.meta.env.FORM_ENDPOINT || '';
+const honeypot = import.meta.env.FORM_HONEYPOT_FIELD || 'website';
+---
+
+<form
+  class="form-routed"
+  data-endpoint={endpoint}
+  data-honeypot={honeypot}
+  novalidate
+>
+  <div class="form-group">
+    <label for="fr-department">I want to talk about <span aria-hidden="true">*</span></label>
+    <select id="fr-department" name="department" required>
+      <option value="">Select a topic</option>
+      <option value="general">General Enquiry</option>
+      <option value="sales">New Project / Sales</option>
+      <option value="support">Support / Bug Report</option>
+      <option value="press">Press / Media</option>
+      <option value="careers">Careers / Freelance</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="fr-name">Name <span aria-hidden="true">*</span></label>
+      <input type="text" id="fr-name" name="name" required autocomplete="name" />
+    </div>
+    <div class="form-group">
+      <label for="fr-email">Email <span aria-hidden="true">*</span></label>
+      <input type="email" id="fr-email" name="email" required autocomplete="email" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="fr-subject">Subject <span aria-hidden="true">*</span></label>
+    <input type="text" id="fr-subject" name="subject" required />
+  </div>
+
+  <div class="form-group">
+    <label for="fr-message">Message <span aria-hidden="true">*</span></label>
+    <textarea id="fr-message" name="message" rows="5" required></textarea>
+  </div>
+
+  <!-- Honeypot -->
+  <div class="form-honeypot" aria-hidden="true">
+    <input type="text" name={honeypot} tabindex="-1" autocomplete="off" />
+  </div>
+
+  <div class="form-status" role="status" aria-live="polite"></div>
+
+  <button type="submit" class="form-submit">
+    <span class="btn-label">Send Message</span>
+    <span class="btn-loading" hidden>Sending…</span>
+  </button>
+</form>
+
+<style>
+  .form-routed { display: flex; flex-direction: column; gap: 1.25rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: .375rem; }
+  .form-group label { font-size: .875rem; font-weight: 500; }
+  .form-group label span { color: var(--color-accent, #e53e3e); }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%; padding: .625rem .75rem;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: .375rem; font-size: 1rem;
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #111);
+    transition: border-color .15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-accent, #3b82f6);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #3b82f6) 20%, transparent);
+  }
+  .form-honeypot { display: none; }
+  .form-status { font-size: .875rem; min-height: 1.25rem; }
+  .form-status.success { color: #16a34a; }
+  .form-status.error   { color: #dc2626; }
+  .form-submit {
+    align-self: flex-start; padding: .625rem 1.5rem;
+    background: var(--color-accent, #3b82f6);
+    color: #fff; border: none; border-radius: .375rem;
+    font-size: 1rem; font-weight: 500; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .form-submit:disabled { opacity: .6; cursor: not-allowed; }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('.form-routed');
+  if (form) {
+    const endpoint  = form.dataset.endpoint || '';
+    const honeypot  = form.dataset.honeypot || 'website';
+    const status    = form.querySelector<HTMLElement>('.form-status')!;
+    const label     = form.querySelector<HTMLElement>('.btn-label')!;
+    const loading   = form.querySelector<HTMLElement>('.btn-loading')!;
+    const submitBtn = form.querySelector<HTMLButtonElement>('.form-submit')!;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!endpoint) { status.textContent = 'Form endpoint not configured.'; status.className = 'form-status error'; return; }
+
+      const data = Object.fromEntries(new FormData(form));
+      if (data[honeypot]) return;
+
+      label.hidden = true; loading.hidden = false; submitBtn.disabled = true;
+      status.textContent = ''; status.className = 'form-status';
+
+      try {
+        const nonceRes = await fetch(endpoint.replace('/forms/submit', '/nonce'));
+        const { nonce } = await nonceRes.json();
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+          body: JSON.stringify({ form_id: 'routed', fields: data }),
+        });
+        const result = await res.json();
+        status.textContent = result.message || (result.success ? 'Message sent!' : 'Something went wrong.');
+        status.className   = 'form-status ' + (result.success ? 'success' : 'error');
+        if (result.success) form.reset();
+      } catch {
+        status.textContent = 'Network error. Please try again.';
+        status.className   = 'form-status error';
+      } finally {
+        label.hidden = false; loading.hidden = true; submitBtn.disabled = false;
+      }
+    });
+  }
+</script>

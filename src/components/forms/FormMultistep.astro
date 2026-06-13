@@ -1,0 +1,240 @@
+---
+// FormMultistep — G-will Chijioke (https://gwillchijioke.com)
+const endpoint = import.meta.env.FORM_ENDPOINT || '';
+const honeypot = import.meta.env.FORM_HONEYPOT_FIELD || 'website';
+---
+
+<div class="form-multistep-wrap" data-endpoint={endpoint} data-honeypot={honeypot}>
+
+  <!-- Progress indicator -->
+  <div class="fms-progress" aria-label="Form progress">
+    <div class="fms-step-indicator active" data-step="1">
+      <span class="fms-step-num">1</span>
+      <span class="fms-step-label">Contact</span>
+    </div>
+    <div class="fms-divider"></div>
+    <div class="fms-step-indicator" data-step="2">
+      <span class="fms-step-num">2</span>
+      <span class="fms-step-label">Project</span>
+    </div>
+    <div class="fms-divider"></div>
+    <div class="fms-step-indicator" data-step="3">
+      <span class="fms-step-num">3</span>
+      <span class="fms-step-label">Review</span>
+    </div>
+  </div>
+
+  <form class="form-multistep" novalidate>
+
+    <!-- Step 1: Contact Info -->
+    <fieldset class="fms-fieldset active" data-step="1">
+      <legend class="sr-only">Step 1: Your contact details</legend>
+      <div class="form-group">
+        <label for="fms-name">Full Name <span aria-hidden="true">*</span></label>
+        <input type="text" id="fms-name" name="name" required autocomplete="name" />
+      </div>
+      <div class="form-group">
+        <label for="fms-email">Email <span aria-hidden="true">*</span></label>
+        <input type="email" id="fms-email" name="email" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="fms-phone">Phone (optional)</label>
+        <input type="tel" id="fms-phone" name="phone" autocomplete="tel" />
+      </div>
+      <div class="fms-nav">
+        <button type="button" class="form-submit fms-next" data-next="2">Next →</button>
+      </div>
+    </fieldset>
+
+    <!-- Step 2: Project Details -->
+    <fieldset class="fms-fieldset" data-step="2" hidden>
+      <legend class="sr-only">Step 2: Project details</legend>
+      <div class="form-group">
+        <label for="fms-type">Project Type <span aria-hidden="true">*</span></label>
+        <select id="fms-type" name="project_type" required>
+          <option value="">Select a type</option>
+          <option value="new-website">New Website</option>
+          <option value="redesign">Redesign</option>
+          <option value="seo">SEO</option>
+          <option value="headless-wp">Headless WordPress</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="fms-timeline">Timeline</label>
+        <select id="fms-timeline" name="timeline">
+          <option value="">Not sure</option>
+          <option value="asap">As soon as possible</option>
+          <option value="1-month">Within 1 month</option>
+          <option value="3-months">Within 3 months</option>
+          <option value="flexible">Flexible</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="fms-details">Project Details <span aria-hidden="true">*</span></label>
+        <textarea id="fms-details" name="message" rows="4" required></textarea>
+      </div>
+      <div class="fms-nav">
+        <button type="button" class="form-back fms-prev" data-prev="1">← Back</button>
+        <button type="button" class="form-submit fms-next" data-next="3">Next →</button>
+      </div>
+    </fieldset>
+
+    <!-- Step 3: Review & Submit -->
+    <fieldset class="fms-fieldset" data-step="3" hidden>
+      <legend class="sr-only">Step 3: Review and submit</legend>
+      <div class="fms-review"></div>
+
+      <!-- Honeypot -->
+      <div class="form-honeypot" aria-hidden="true">
+        <input type="text" name={honeypot} tabindex="-1" autocomplete="off" />
+      </div>
+
+      <div class="form-status" role="status" aria-live="polite"></div>
+
+      <div class="fms-nav">
+        <button type="button" class="form-back fms-prev" data-prev="2">← Back</button>
+        <button type="submit" class="form-submit">
+          <span class="btn-label">Submit</span>
+          <span class="btn-loading" hidden>Submitting…</span>
+        </button>
+      </div>
+    </fieldset>
+
+  </form>
+</div>
+
+<style>
+  .form-multistep-wrap { display: flex; flex-direction: column; gap: 1.5rem; }
+  .fms-progress { display: flex; align-items: center; gap: .5rem; }
+  .fms-step-indicator { display: flex; flex-direction: column; align-items: center; gap: .25rem; opacity: .4; transition: opacity .2s; }
+  .fms-step-indicator.active { opacity: 1; }
+  .fms-step-indicator.done .fms-step-num { background: #16a34a; }
+  .fms-step-num {
+    width: 2rem; height: 2rem; border-radius: 50%;
+    background: var(--color-accent, #3b82f6); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .875rem; font-weight: 600;
+  }
+  .fms-step-label { font-size: .75rem; font-weight: 500; }
+  .fms-divider { flex: 1; height: 1px; background: var(--color-border, #d1d5db); }
+  .fms-fieldset { border: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1.25rem; }
+  .form-group { display: flex; flex-direction: column; gap: .375rem; }
+  .form-group label { font-size: .875rem; font-weight: 500; }
+  .form-group label span { color: var(--color-accent, #e53e3e); }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%; padding: .625rem .75rem;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: .375rem; font-size: 1rem;
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #111); transition: border-color .15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none; border-color: var(--color-accent, #3b82f6);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #3b82f6) 20%, transparent);
+  }
+  .fms-nav { display: flex; gap: 1rem; align-items: center; }
+  .fms-review { background: var(--color-surface-alt, #f9fafb); border-radius: .5rem; padding: 1rem; font-size: .9rem; line-height: 1.6; }
+  .fms-review dl { display: grid; grid-template-columns: auto 1fr; gap: .25rem .75rem; margin: 0; }
+  .fms-review dt { font-weight: 600; }
+  .form-honeypot { display: none; }
+  .form-status { font-size: .875rem; min-height: 1.25rem; }
+  .form-status.success { color: #16a34a; }
+  .form-status.error   { color: #dc2626; }
+  .form-submit {
+    padding: .625rem 1.5rem;
+    background: var(--color-accent, #3b82f6);
+    color: #fff; border: none; border-radius: .375rem;
+    font-size: 1rem; font-weight: 500; cursor: pointer; transition: opacity .15s;
+  }
+  .form-back {
+    padding: .625rem 1rem; background: transparent;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: .375rem; font-size: 1rem; cursor: pointer;
+  }
+  .form-submit:disabled { opacity: .6; cursor: not-allowed; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+
+<script>
+  const wrap = document.querySelector<HTMLElement>('.form-multistep-wrap');
+  if (wrap) {
+    const form     = wrap.querySelector<HTMLFormElement>('.form-multistep')!;
+    const endpoint = wrap.dataset.endpoint || '';
+    const honeypot = wrap.dataset.honeypot || 'website';
+
+    function goTo(n: number) {
+      wrap.querySelectorAll<HTMLElement>('.fms-fieldset').forEach(fs => {
+        const s = parseInt(fs.dataset.step || '0');
+        fs.hidden = s !== n;
+      });
+      wrap.querySelectorAll<HTMLElement>('.fms-step-indicator').forEach(ind => {
+        const s = parseInt(ind.dataset.step || '0');
+        ind.classList.toggle('active', s === n);
+        ind.classList.toggle('done', s < n);
+      });
+    }
+
+    wrap.querySelectorAll<HTMLButtonElement>('.fms-next').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const currentStep = parseInt(btn.closest<HTMLElement>('.fms-fieldset')!.dataset.step || '1');
+        const fs = wrap.querySelector<HTMLElement>(`.fms-fieldset[data-step="${currentStep}"]`)!;
+        const inputs = fs.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], select[required], textarea[required]');
+        let valid = true;
+        inputs.forEach(i => { if (!i.value.trim()) { i.focus(); valid = false; } });
+        if (!valid) return;
+        const next = parseInt(btn.dataset.next || '2');
+        if (next === 3) {
+          // Build review
+          const review = wrap.querySelector<HTMLElement>('.fms-review')!;
+          const data = Object.fromEntries(new FormData(form));
+          const labels: Record<string, string> = { name: 'Name', email: 'Email', phone: 'Phone', project_type: 'Type', timeline: 'Timeline', message: 'Details' };
+          review.innerHTML = '<dl>' + Object.entries(labels).filter(([k]) => data[k]).map(([k, l]) => `<dt>${l}</dt><dd>${data[k]}</dd>`).join('') + '</dl>';
+        }
+        goTo(next);
+      });
+    });
+
+    wrap.querySelectorAll<HTMLButtonElement>('.fms-prev').forEach(btn => {
+      btn.addEventListener('click', () => goTo(parseInt(btn.dataset.prev || '1')));
+    });
+
+    const status    = form.querySelector<HTMLElement>('.form-status')!;
+    const label     = form.querySelector<HTMLElement>('.btn-label')!;
+    const loading   = form.querySelector<HTMLElement>('.btn-loading')!;
+    const submitBtn = form.querySelector<HTMLButtonElement>('[type="submit"]')!;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!endpoint) { status.textContent = 'Form endpoint not configured.'; status.className = 'form-status error'; return; }
+      const data = Object.fromEntries(new FormData(form));
+      if (data[honeypot]) return;
+
+      label.hidden = true; loading.hidden = false; submitBtn.disabled = true;
+      status.textContent = ''; status.className = 'form-status';
+
+      try {
+        const nonceRes = await fetch(endpoint.replace('/forms/submit', '/nonce'));
+        const { nonce } = await nonceRes.json();
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+          body: JSON.stringify({ form_id: 'multistep', fields: data }),
+        });
+        const result = await res.json();
+        status.textContent = result.message || (result.success ? 'Submitted!' : 'Something went wrong.');
+        status.className   = 'form-status ' + (result.success ? 'success' : 'error');
+        if (result.success) { form.reset(); goTo(1); }
+      } catch {
+        status.textContent = 'Network error. Please try again.';
+        status.className   = 'form-status error';
+      } finally {
+        label.hidden = false; loading.hidden = true; submitBtn.disabled = false;
+      }
+    });
+  }
+</script>
