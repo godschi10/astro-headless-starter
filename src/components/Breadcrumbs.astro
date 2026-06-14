@@ -13,7 +13,8 @@ const { crumbs } = Astro.props;
 
 // RankMath sends HTML-encoded names (e.g. "Troubleshooting &amp; Fixes").
 // Decode at build time so the rendered HTML shows the real character.
-function decodeHtml(str: string): string {
+function decodeHtml(str: string | null | undefined): string {
+  if (str == null) return '';
   return str
     .replace(/&amp;/g,  '&')
     .replace(/&lt;/g,   '<')
