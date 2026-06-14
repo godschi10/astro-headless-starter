@@ -192,23 +192,35 @@ const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
   @media (max-width: 768px) {
     .nav-toggle { display: block; }
     .nav-list {
+      /* Position below header, full width */
       position: absolute;
       top: 100%;
       left: 0;
       right: 0;
+      /* Stack above ALL page content — critical on mobile */
+      z-index: 100;
       background: var(--color-surface);
       border-bottom: 1px solid var(--color-border);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
       flex-direction: column;
       padding: var(--spacing);
       gap: var(--spacing);
-      transform: translateY(-100%);
+      /* FIXED hidden state: visibility is reliable; translateY(-100%) was
+         moving the menu offscreen upward and overlapping the header, causing
+         flaky behaviour on Android Chrome. */
+      visibility: hidden;
       opacity: 0;
+      transform: translateY(-6px);
       pointer-events: none;
-      transition: transform var(--transition-base), opacity var(--transition-base);
+      transition:
+        opacity var(--transition-base),
+        visibility var(--transition-base),
+        transform var(--transition-base);
     }
     .nav-list.is-open {
-      transform: translateY(0);
+      visibility: visible;
       opacity: 1;
+      transform: translateY(0);
       pointer-events: auto;
     }
   }

@@ -71,6 +71,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Minimum 44×44px tap target — WCAG 2.5.5 */
+    min-width: 44px;
+    min-height: 44px;
+    /* Explicit position so z-index is honoured if needed */
+    position: relative;
+    z-index: 1;
   }
   .darkmode-toggle:hover {
     background: var(--color-muted);

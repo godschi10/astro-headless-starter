@@ -48,8 +48,12 @@ const { postId } = Astro.props;
   </section>
 )}
 
-<script define:vars={{ commentsEndpoint: COMMENTS_ENDPOINT }}>
+<script>
+  // IMPORTANT: No define:vars here — define:vars forces is:inline mode which
+  // breaks ES `import` statements (SyntaxError in browser).
+  // import.meta.env is replaced at build time by Vite — no runtime cost.
   import DOMPurify from 'dompurify';
+  const commentsEndpoint: string = import.meta.env.COMMENTS_ENDPOINT || '';
 
   // Allowed tags/attrs for comment body HTML from WP
   const COMMENT_PURIFY_CONFIG = {
