@@ -46,6 +46,9 @@ const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
       <span class="logo-text">{SITE_NAME}</span>
     </a>
 
+    <div class="darkmode-wrapper">
+      {ENABLE_DARKMODE && <DarkModeToggle />}
+    </div>
     <nav class="main-nav" aria-label="Primary navigation">
       <button
         class="nav-toggle"
@@ -80,7 +83,6 @@ const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
       </ul>
     </nav>
 
-    {ENABLE_DARKMODE && <DarkModeToggle />}
   </div>
 </header>
 
@@ -112,6 +114,13 @@ const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
     border-bottom: 1px solid var(--color-border);
     backdrop-filter: blur(8px);
   }
+  /* Desktop: Logo | Nav-links | Toggle */
+  @media (min-width: 769px) {
+    .darkmode-wrapper { order: 3; }
+    .main-nav         { order: 2; }
+    .site-logo        { order: 1; }
+  }
+
   .header-inner {
     max-width: var(--max-width);
     margin: 0 auto;
@@ -121,6 +130,11 @@ const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
     justify-content: space-between;
     gap: var(--spacing);
   }
+  .darkmode-wrapper {
+    display: flex;
+    align-items: center;
+  }
+
   .site-logo {
     font-size: 1.25rem;
     font-weight: 700;
@@ -190,11 +204,6 @@ const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
   .hamburger::after  { top:  7px; }
 
   @media (max-width: 768px) {
-    /* Reorder: Logo | Toggle | Hamburger on mobile */
-    .site-logo      { order: 1; }
-    .darkmode-toggle{ order: 2; }   /* move toggle to centre */
-    .main-nav       { order: 3; }   /* hamburger goes far right */
-
     .nav-toggle { display: block; }
     .nav-list {
       /* Position below header, full width */
