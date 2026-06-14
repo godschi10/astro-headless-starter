@@ -190,6 +190,11 @@ const topLevelItems = primaryMenu.filter( ( item ) => item.parent === 0 );
   .hamburger::after  { top:  7px; }
 
   @media (max-width: 768px) {
+    /* Reorder: Logo | Toggle | Hamburger on mobile */
+    .site-logo      { order: 1; }
+    .darkmode-toggle{ order: 2; }   /* move toggle to centre */
+    .main-nav       { order: 3; }   /* hamburger goes far right */
+
     .nav-toggle { display: block; }
     .nav-list {
       /* Position below header, full width */
